@@ -1,28 +1,16 @@
 import numpy as np
 
-def read_AP(filepath):
-    with open(filepath, mode='r', encoding='utf-8-sig') as file:
-        # read lines ignoring empty
-        lines = [line for line in file.readlines() if line.strip()]
-
-        # first line contains parameters of the problem
-        parameters = lines[0].split()
-        N, p = convert_list(parameters[:2], int)
-        alpha, delta, ksi = convert_list(parameters[2:], float)
-        
-        # next N lines contain N points
-        points = []
-        for line in lines[1:N+1]:
-            points.append(tuple(map(float, line.split())))
-        
-        # next N lines contain NxN matrix containing flows between points
-        W = []
-        for line in lines[N+1:]:
-            W.append(list(map(float, line.split())))
-
-        return (N, p, alpha, delta, ksi, np.array(points), np.array(W))
+def parse_input(filepath, dataset):
+    if dataset == 'AP':
+        return parse_AP(filepath)
+    elif dataset == 'CAB':
+        return parse_CAB(filepath)
+    else:
+        raise ValueError("Unknown dataset. Supported datasets: \
+                         'AP' (\"Australia Post\" dataset), \
+                         'CAB' (\"Civil Aeronautics Board\" datset)")
     
-def read_AP_v2(filepath):
+def parse_AP(filepath):
     with open(filepath, mode='r', encoding='utf-8-sig') as file:
         # read lines ignoring empty
         lines = [line for line in file.readlines() if line.strip()]
@@ -47,15 +35,15 @@ def read_AP_v2(filepath):
 
         return (N, p, alpha, delta, ksi, np.array(points), np.array(W))
 
-def read_CAB(filepath):
-     with open(filepath, mode='r', encoding='utf-8-sig') as file:
+def parse_CAB(filepath):
+    with open(filepath, mode='r', encoding='utf-8-sig') as file:
         # read lines ignoring empty
         lines = [line for line in file.readlines() if line.strip()]
 
         # first line contains parameters of the problem
         parameters = lines[0].split()
-        N, p = convert_list(parameters[:2], int)
-        alpha, delta, ksi = convert_list(parameters[2:], float)
+        N, p = _convert_list(parameters[:2], int)
+        alpha, delta, ksi = _convert_list(parameters[2:], float)
         
         # next N lines contain NxN matrix containing flows between points
         W = []
@@ -67,13 +55,9 @@ def read_CAB(filepath):
         for line in lines[N+1:]:
             C.append(list(map(float, line.split())))
 
-        
-
         return (N, p, alpha, delta, ksi, np.array(C), np.array(W))
 
 
 
-# private methods:
-
-def convert_list(l, elem_type):
+def _convert_list(l, elem_type):
     return list(map(elem_type, l))
