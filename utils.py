@@ -37,7 +37,7 @@ def allocate_paths(n, hubs, distances, discounts):
         for B in nodes:
             # connection between non-hub nodes is not allowed
             if A != B and (A not in hubs) and (B not in hubs):
-                cost_graph[A, B] = -1
+                cost_graph[A, B] = 0
     paths = []
     for A in nodes:
         _, paths_from_A = dijkstra(cost_graph, A)
