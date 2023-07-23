@@ -6,7 +6,7 @@ import numpy as np
 class Solution:
     pass
 
-def get_flow(n, X_allocated, Y_allocated, Z_allocated):
+def get_flow_from_XYZ(n, X_allocated, Y_allocated, Z_allocated):
     """Calculates the flow matrix, the flow between pairs of nodes, given allocated variables from 
     the solution of Ernst and Krishnamoorthy formulation
 
