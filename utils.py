@@ -2,13 +2,15 @@ from scipy.spatial import distance_matrix as _distance_matrix
 import numpy as np
 from graph_utils import dijkstra
 
+def get_nodes(n):
+    return list(range(n))
 
 def get_distance_matrix(nodes_coordinates):
     return _distance_matrix(nodes_coordinates, nodes_coordinates)
 
 def get_discount_matrix(n, hubs, alpha, delta, ksi):
     discounts = np.ones((n,n))
-    nodes = list(range(n))
+    nodes = get_nodes(n)
     for A in nodes:
         for B in nodes:
             if (A in hubs) and (B in hubs):
@@ -31,7 +33,7 @@ def get_flow_from_paths(n, paths, demand):
     return flow
 
 def allocate_paths(n, hubs, distances, discounts):
-    nodes = list(range(n))
+    nodes = get_nodes(n)
     cost_graph = distances*discounts
     for A in nodes:
         for B in nodes:
