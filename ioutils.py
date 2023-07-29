@@ -1,4 +1,24 @@
 import numpy as np
+import re
+
+def parse_solutions(filepath):
+    solutions = {}
+    with open(filepath, mode='r', encoding='utf-8-sig') as file:
+        # read lines ignoring empty
+        lines = [line for line in file.readlines() if line.strip()]
+        for sol, obj, hubs in _chunks(lines, 3):
+            match = re.match('Solution for n=(.*), p=(.*) :', sol)
+            n = int(match.group(1))
+            p = int(match.group(2))
+            match = re.match('Objective : (.*)', obj)
+            if match is not None:
+                objective = float(match.group(1))
+            else:
+                objective = None
+            match = re.match('Hubs : (.*)', hubs)
+            hubs = _convert_list(match.group(1).split(', '), int)
+            solutions[n,p] = {"objective": objective, "hubs": hubs}
+    return solutions
 
 def parse_input(filepath, dataset):
     if dataset == 'AP':
@@ -61,3 +81,7 @@ def parse_CAB(filepath):
 
 def _convert_list(l, elem_type):
     return list(map(elem_type, l))
+
+def _chunks(lst, n):
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]

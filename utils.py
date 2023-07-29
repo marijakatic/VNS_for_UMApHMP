@@ -58,6 +58,9 @@ def allocate_paths(n, hubs, distances, discounts):
     more_paths = _orig_equals_dest_paths(nodes, hubs, cost_graph)
     return paths + more_paths
 
+def bitmap(n, list):
+    return [1 if i in list else 0 for i in range(n)]
+
 def _orig_equals_dest_paths(nodes, hubs, cost_graph):
     peculiar_paths = []
     for node in nodes:

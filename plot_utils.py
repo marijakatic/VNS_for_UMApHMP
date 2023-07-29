@@ -1,25 +1,45 @@
 import matplotlib.pyplot as plt 
 import numpy as np
+import string
+
+def plot_solution(points, hubs, flow, title='', point_labels='numbers', plot_all_lines=False, verbose=0):
+  fig, ax = plt.subplots(1, figsize=(6, 6))
+  _plot_solution(ax, points,  hubs, flow, title, point_labels, plot_all_lines, verbose)
+  plt.show()
+
+def plot_two_solutions(points, hubs1, hubs2, flow1, flow2, title1='', title2='', point_labels='numbers', plot_all_lines=False, verbose=0):
+  fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+  _plot_solution(ax1, points, hubs1, flow1, title1, point_labels, plot_all_lines, verbose)
+  _plot_solution(ax2, points, hubs2, flow2, title2, point_labels, plot_all_lines, verbose)
+  plt.show()
 
 # Plot solution as a Graph in Cartesian coordinate system
-def plot_solution(ax, points, point_names, Hubs, flow, plot_all_lines=False, verbose=0):
-  Range = range(len(points))
+def _plot_solution(ax, points, hubs, flow, title='', point_labels='numbers', plot_all_lines=False, verbose=0):
+  n = len(points)
   # Get x and y coordinates
   xs = [point[0] for point in points]
   ys = [point[1] for point in points]
 
   # Assign colors to points (hub red, non-hub blue)
   color_map = {0: 'blue', 1: 'red'}
-  point_colors = [color_map[hub] for hub in Hubs]
+  point_colors = [color_map[hub] for hub in hubs]
+
+  # Set point names
+  if point_labels == 'numbers':
+    point_labels = list(range(n))
+  elif point_labels == 'alphabet':
+    point_labels = list(string.ascii_uppercase)
+  else: 
+    raise ValueError("Unknown point_labels. Supported point_labels are: 'numbers', 'alphabet'.")
 
   # Plot points
   ax.scatter(xs, ys, c=point_colors)
-  for i in Range:
-      ax.annotate(point_names[i], points[i])
+  for i in range(n):
+      ax.annotate(point_labels[i], points[i])
 
   # Draw lines connecting points
-  for i in Range:
-    for k in Range:
+  for i in range(n):
+    for k in range(n):
       # Points a and b
       point_a = points[i]
       point_b = points[k]
@@ -35,7 +55,7 @@ def plot_solution(ax, points, point_names, Hubs, flow, plot_all_lines=False, ver
         if i > k:
           AB_y += 0.2
         # Write flows at the middle of the line
-        ax.text(AB_x, AB_y, '{0}→{1}: {2}'.format(point_names[i], point_names[k], flow[i,k]))
+        ax.text(AB_x, AB_y, '{0}→{1}: {2}'.format(point_labels[i], point_labels[k], flow[i,k]))
 
       # line width to represent flow
       if verbose == 2:
@@ -54,9 +74,9 @@ def plot_solution(ax, points, point_names, Hubs, flow, plot_all_lines=False, ver
       if flow[i,k] > 0:
         ax.plot(endpoints_x, endpoints_y, c='grey', ls='--', lw=linewidth, alpha=0.5)
       # Ephasize connections between hubs
-      if Hubs[i] == 1 and Hubs[k] == 1:
+      if hubs[i] == 1 and hubs[k] == 1:
         ax.plot(endpoints_x, endpoints_y, c='black', ls='-', lw=linewidth)
       
+  ax.set_title(title)
   # Draw major and minor grid lines
   ax.grid(which='both', color='yellow', linewidth=1, linestyle='-', alpha=0.2)
-
