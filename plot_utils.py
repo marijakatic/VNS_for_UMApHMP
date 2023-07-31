@@ -8,7 +8,7 @@ def plot_solution(points, hubs, flow, title='', point_labels='numbers', plot_all
   plt.show()
 
 def plot_two_solutions(points, hubs1, hubs2, flow1, flow2, title1='', title2='', point_labels='numbers', plot_all_lines=False, verbose=0):
-  fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+  fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
   _plot_solution(ax1, points, hubs1, flow1, title1, point_labels, plot_all_lines, verbose)
   _plot_solution(ax2, points, hubs2, flow2, title2, point_labels, plot_all_lines, verbose)
   plt.show()
