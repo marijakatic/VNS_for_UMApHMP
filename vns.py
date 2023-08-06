@@ -11,10 +11,10 @@ from global_parameters import NEIGHBOURHOOD_TYPES
 MAX_ITER = 25
 PRECISION = 0.0001
 
-def get_initial_solution(n, p, distances):
+def get_initial_solution_robust(n, p, distances):
     """Solution initialization method for vns.
 
-    Paramteres: 
+    Paramteres:
     n (int): Number of nodes
     p (int): Number of hubs
     distances (matrix): distance matrix for the graph
@@ -38,6 +38,32 @@ def get_initial_solution(n, p, distances):
     for node in nodes:
         longest_edge_from_node[node] = max(distances[node])
     hubs = sorted(longest_edge_from_node, key=longest_edge_from_node.get)[:p]
+    return hubs
+
+def get_initial_solution_median(n, p, distances):
+    """Get initial solution method for vns.
+
+    Paramteres:
+    n (int): Number of nodes
+    p (int): Number of hubs
+    distances (matrix): distance matrix for the graph
+
+    Returns:
+    (list): hubs
+
+    Notes:
+    This is modification of get_initial_solution_robust. We are taking p medain values of the functon g.
+    """
+    nodes = get_nodes(n)
+    longest_edge_from_node = {}
+    for node in nodes:
+        longest_edge_from_node[node] = max(distances[node])
+    most_left_hub = int((n-p)/2)
+    # if any of n or p are even
+    if (n+p) % 2 == 0:
+        most_left_hub -= 1
+    most_right_hub = int((n+p-1)/2)
+    hubs = sorted(longest_edge_from_node, key=longest_edge_from_node.get)[most_left_hub:most_right_hub]
     return hubs
 
 def get_best_solution(solutions):
@@ -72,7 +98,12 @@ def shake(solution, neighbourhood_type, k=1):
     random_k_sample = random.sample(neighbourhood, k)
     return get_best_solution(random_k_sample)
 
-def basic_VNS(problem, diversification_param=0, max_iter=MAX_ITER, precision=PRECISION, verbose=False):
+def basic_VNS(problem,
+              diversification_param=0,
+              initialization_method=get_initial_solution_robust,
+              max_iter=MAX_ITER,
+              precision=PRECISION,
+              verbose=False):
     '''Basic VNS for UMApHMP.
 
     Parameters:
@@ -100,7 +131,7 @@ def basic_VNS(problem, diversification_param=0, max_iter=MAX_ITER, precision=PRE
     shake_param_k = int((problem.p*(problem.n - problem.p) - 1)*diversification_param + 1)
 
     # initialize solution
-    solution = Solution(get_initial_solution(problem.n, problem.p, problem.distances), problem)
+    solution = Solution(initialization_method(problem.n, problem.p, problem.distances), problem)
     optimal_solution = solution
     if verbose == True:
         iter_range = tqdm(range(max_iter))
@@ -129,6 +160,6 @@ def basic_VNS(problem, diversification_param=0, max_iter=MAX_ITER, precision=PRE
         if solution.cost < optimal_solution.cost:
             optimal_solution = solution
         if problem.optimal_cost is not None \
-            and abs(optimal_solution.cost - problem.optimal_cost) < PRECISION:
+            and abs(optimal_solution.cost - problem.optimal_cost) < precision:
             break
     return optimal_solution
