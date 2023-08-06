@@ -70,14 +70,30 @@ def get_best_solution(solutions):
     # solution ← argmin{f(s)}, s ∈ solutions
     return min(solutions, key=attrgetter('cost'))
 
-# Lets use Best Improvement Search. We can also try First Improvement search later.
-def local_search(solution, neighbourhood_type):
+def local_search_best_improvement(solution, neighbourhood_type):
     ''' Best Improvement Search'''
     while True:
         curr_solution = solution
         neighbourhood = [Solution(neighbour, solution.problem)
                      for neighbour in solution.get_neighbourhood(neighbourhood_type)]
         solution = get_best_solution(neighbourhood)
+        # if no direction of descent anymore
+        if solution.cost >= curr_solution.cost:
+            break
+    return curr_solution
+
+def local_search_first_improvement(solution, neighbourhood_type):
+    '''First Improvement Search'''
+    while True:
+        curr_solution = solution
+        # take the first better solution, not the best, from neighbourhood
+        neighbourhood = solution.get_neighbourhood(neighbourhood_type)
+        for neighbour in neighbourhood:
+            neighbour = Solution(neighbour, solution.problem)
+            # early stopping, when first descent is found
+            if neighbour.cost < curr_solution.cost:
+                curr_solution = neighbour
+                break
         # if no direction of descent anymore
         if solution.cost >= curr_solution.cost:
             break
@@ -101,6 +117,7 @@ def shake(solution, neighbourhood_type, k=1):
 def basic_VNS(problem,
               diversification_param=0,
               initialization_method=get_initial_solution_robust,
+              local_search=local_search_best_improvement,
               max_iter=MAX_ITER,
               precision=PRECISION,
               verbose=False):
