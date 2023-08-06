@@ -1,12 +1,62 @@
 from scipy.spatial import distance_matrix as _distance_matrix
 import numpy as np
-from graph_utils import dijkstra
+import pandas as pd
 
+import sys
+from os import listdir
 from os.path import isfile
+import time
+from tqdm import tqdm
 
 from ioutils import parse_input
 from ioutils import parse_solutions
+from graph_utils import dijkstra
 from plot_utils import plot_two_solutions
+from global_parameters import NEIGHBOURHOOD_TYPES
+
+
+class ProblemInstance:
+    def __init__(self, n, p, alpha, delta, ksi, node_coordinates, demand, optimal_cost=None):
+        self.n = n
+        self.p = p
+        self.alpha = alpha
+        self.delta = delta
+        self.ksi = ksi
+        self.node_coordinates = node_coordinates
+        self.demand = demand
+        self.distances = get_distance_matrix(self.node_coordinates)
+        self.optimal_cost = optimal_cost
+
+    def __str__(self):
+        return f"{self.n}.{self.p}"
+
+    def __lt__(self, obj):
+        return (self.n, self.p) < (obj.n, obj.p)
+
+class Solution:
+    def __init__(self, hubs, problem, cost=None):
+        self.hubs = hubs
+        self.problem = problem
+        if cost is not None:
+            self.cost = cost
+        else:
+            self.cost = self._get_cost()
+        # We'll caluclate the neighbourhood only when it's needed for the first time
+        self.swap_neighbourhood = None
+
+    def __str__(self):
+        return f"Solution(hubs={self.hubs})"
+
+    def _get_cost(self):
+        return get_solution_cost(self.hubs, self.problem)
+
+    def get_neighbourhood(self, neighbourhood_type):
+        if neighbourhood_type == 'swap':
+            if self.swap_neighbourhood == None:
+                self.swap_neighbourhood = get_swap_neighbourhood(self.hubs, self.problem.n)
+            return self.swap_neighbourhood
+        else:
+            raise ValueError(f"Unknown neighbourhood type. Supported neighbourhood types: {NEIGHBOURHOOD_TYPES}")
 
 def get_nodes(n):
     return list(range(n))
@@ -120,6 +170,46 @@ def plot_comparison_with_optimal(input_directory, solutions_file, dataset, get_s
                         title1=f"Optimal solution for n={n}, p={p}",
                         title2=f"Initial solution for n={n}, p={p}",
                         verbose=2)
+
+def get_comparison_table(list_of_methods, number_of_problems, dataset, test_data_directory, solutions_file):
+    problems = []
+    solutions = parse_solutions(solutions_file)
+    files = listdir(test_data_directory)
+    for file in files:
+        n, p, alpha, delta, ksi, nodes, demand = parse_input(test_data_directory + file, dataset)
+        if (n,p) in solutions:
+            optimal_cost = solutions[(n,p)]['objective']
+        else:
+            # todo fix this hack
+            optimal_cost = None
+        problems.append(ProblemInstance(n, p, alpha, delta, ksi, nodes, demand, optimal_cost))
+    problems = sorted(problems)[:number_of_problems]
+
+    columns = ['optimal solution']
+    for method in list_of_methods:
+        columns.append(method.__name__ + " - solution")
+        columns.append(method.__name__ + " - deviation (%)")
+        columns.append(method.__name__ + " - time (s)")
+
+    data = {}
+    for problem in tqdm(problems):
+        data[str(problem)] = [problem.optimal_cost]
+        for method in list_of_methods:
+            starttime = time.time()
+            solution = method(problem)
+            endtime = time.time()
+            solution.cost = solution.cost/1000
+            data[str(problem)].append(solution.cost)
+            if problem.optimal_cost == None:
+                deviation = None
+            else:
+                deviation = 100 * abs(problem.optimal_cost - solution.cost) / problem.optimal_cost
+                deviation = round(deviation, 4)
+            data[str(problem)].append(deviation)
+            data[str(problem)].append(endtime-starttime)
+
+    return pd.DataFrame.from_dict(data, orient='index', columns=columns)
+
 
 def _orig_equals_dest_paths(nodes, hubs, cost_graph):
     peculiar_paths = []

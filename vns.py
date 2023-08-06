@@ -1,11 +1,15 @@
 from utils import get_nodes
-from umaphmp import Solution
+from utils import Solution
 
 from operator import attrgetter
 import random
 from tqdm import tqdm
 
-NEIGHBOURHOOD_TYPES = ['swap']
+from global_parameters import NEIGHBOURHOOD_TYPES
+
+
+MAX_ITER = 25
+PRECISION = 0.0001
 
 def get_initial_solution(n, p, distances):
     """Solution initialization method for vns.
@@ -36,15 +40,18 @@ def get_initial_solution(n, p, distances):
     hubs = sorted(longest_edge_from_node, key=longest_edge_from_node.get)[:p]
     return hubs
 
+def get_best_solution(solutions):
+    return min(solutions, key=attrgetter('cost'))
+
 # Lets use Best Improvement Search. We can also try First Improvement search later.
 def local_search(solution, neighbourhood_type):
     ''' Best Improvement Search'''
-    neighbourhood = [Solution(neighbour, solution.problem) 
+    neighbourhood = [Solution(neighbour, solution.problem)
                      for neighbour in solution.get_neighbourhood(neighbourhood_type)]
     while True:
         curr_solution = solution
         # solution ← argmin{f(s)}, s ∈ N(solution)
-        solution = min(neighbourhood, key=attrgetter('cost'))
+        solution = get_best_solution(neighbourhood)
         # if no direction of descent anymore
         if solution.cost >= curr_solution.cost:
             break
@@ -56,13 +63,15 @@ def shake(solution, neighbourhood_type):
                     solution.problem)
 
 
-def basic_VNS(problem, max_iter):
+def basic_VNS(problem, max_iter=MAX_ITER, precision=PRECISION, verbose=False):
     # initialize solution
-    solution = Solution(
-        get_initial_solution(problem.n, problem.p, problem.distances),
-        problem)
+    solution = Solution(get_initial_solution(problem.n, problem.p, problem.distances), problem)
     optimal_solution = solution
-    for iteration in tqdm(range(max_iter)):
+    if verbose == True:
+        iter_range = tqdm(range(max_iter))
+    else: 
+        iter_range = range(max_iter)
+    for iteration in iter_range:
         i = 0
         while i < len(NEIGHBOURHOOD_TYPES):
             # Shaking
@@ -84,5 +93,7 @@ def basic_VNS(problem, max_iter):
         # Update optimal solution
         if solution.cost < optimal_solution.cost:
             optimal_solution = solution
+        if problem.optimal_cost is not None \
+            and abs(optimal_solution.cost - problem.optimal_cost) < PRECISION:
+            break
     return optimal_solution
-    
