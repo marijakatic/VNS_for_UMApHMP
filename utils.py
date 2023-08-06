@@ -7,6 +7,7 @@ from os import listdir
 from os.path import isfile
 import time
 from tqdm import tqdm
+import git
 
 from ioutils import parse_input
 from ioutils import parse_solutions
@@ -210,6 +211,9 @@ def get_comparison_table(list_of_methods, number_of_problems, dataset, test_data
 
     return pd.DataFrame.from_dict(data, orient='index', columns=columns)
 
+def get_latest_commit_id():
+    repo = git.Repo(search_parent_directories=True)
+    return repo.head.object.hexsha
 
 def _orig_equals_dest_paths(nodes, hubs, cost_graph):
     peculiar_paths = []

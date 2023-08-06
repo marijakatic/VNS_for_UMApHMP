@@ -78,6 +78,8 @@ def parse_CAB(filepath):
         return (N, p, alpha, delta, ksi, np.array(C), np.array(W))
 
 
+def get_comparison_table_file_name(experimentation_topic, number_of_problems, latest_commit_id):
+    return  f'./output/basic_VNS_{experimentation_topic}_{number_of_problems}_{latest_commit_id}.csv'
 
 def _convert_list(l, elem_type):
     return list(map(elem_type, l))
