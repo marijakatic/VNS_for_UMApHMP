@@ -206,7 +206,7 @@ def get_comparison_table(list_of_methods, number_of_problems, dataset, test_data
                 deviation = 100 * abs(problem.optimal_cost - solution.cost) / problem.optimal_cost
                 deviation = round(deviation, 4)
             data[str(problem)].append(deviation)
-            data[str(problem)].append(endtime-starttime)
+            data[str(problem)].append(round(endtime-starttime, 6))
 
     return pd.DataFrame.from_dict(data, orient='index', columns=columns)
 
