@@ -21,8 +21,8 @@ class Solution:
             self.cost = cost
         else:
             self.cost = self._get_cost()
-        # list of hubs lists (not list of solutions)
-        self.swap_neighbourhood = get_swap_neighbourhood(hubs, problem.n)
+        # We'll caluclate the neighbourhood only when it's needed for the first time
+        self.swap_neighbourhood = None
 
     def __str__(self):
         return f"Solution(hubs={self.hubs})"
@@ -32,6 +32,8 @@ class Solution:
 
     def get_neighbourhood(self, neighbourhood_type):
         if neighbourhood_type == 'swap':
+            if self.swap_neighbourhood == None:
+                self.swap_neighbourhood = get_swap_neighbourhood(self.hubs, self.problem.n)
             return self.swap_neighbourhood
         else:
             raise ValueError(f"Unknown neighbourhood type. Supported neighbourhood types: {NEIGHBOURHOOD_TYPES}")
