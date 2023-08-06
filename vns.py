@@ -41,16 +41,16 @@ def get_initial_solution(n, p, distances):
     return hubs
 
 def get_best_solution(solutions):
+    # solution ← argmin{f(s)}, s ∈ solutions
     return min(solutions, key=attrgetter('cost'))
 
 # Lets use Best Improvement Search. We can also try First Improvement search later.
 def local_search(solution, neighbourhood_type):
     ''' Best Improvement Search'''
-    neighbourhood = [Solution(neighbour, solution.problem)
-                     for neighbour in solution.get_neighbourhood(neighbourhood_type)]
     while True:
         curr_solution = solution
-        # solution ← argmin{f(s)}, s ∈ N(solution)
+        neighbourhood = [Solution(neighbour, solution.problem)
+                     for neighbour in solution.get_neighbourhood(neighbourhood_type)]
         solution = get_best_solution(neighbourhood)
         # if no direction of descent anymore
         if solution.cost >= curr_solution.cost:
