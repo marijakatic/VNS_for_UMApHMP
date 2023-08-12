@@ -1,5 +1,6 @@
 import unittest
 import graph_utils
+import numpy as np
 
 class GraphTestCase(unittest.TestCase):
 
@@ -36,6 +37,25 @@ class GraphTestCase(unittest.TestCase):
                                    8: [0, 6, 7, 8]}
         self.assertEqual(D, D_expected)
         self.assertEqual(shortest_paths, shortest_paths_expected)
+
+    # test example from https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.floyd_warshall.html
+    def test_givenBasicGraph_whenFloydWarshal_thenShortestPathsReturned(self):
+        # GIVEN
+        g = graph_utils._initialize_graph(4)
+        graph_utils._add_edge(g, 0, 1, 1)
+        graph_utils._add_edge(g, 0, 2, 2)
+        graph_utils._add_edge(g, 1, 3, 1)
+        graph_utils._add_edge(g, 2, 0, 2)
+        graph_utils._add_edge(g, 2, 3, 3)
+        # WHEN
+        predecessors = graph_utils.floyd_warshall(g).tolist()
+        # THEN
+        predecessors_expected = [[-9999,    0,     0,     1],
+                                 [   1, -9999,     0,     1],
+                                 [   2,     0, -9999,     2],
+                                 [   1,     3,     3, -9999]]
+        self.assertEqual(predecessors, predecessors_expected)
+
 
 if __name__ == '__main__':
     unittest.main()

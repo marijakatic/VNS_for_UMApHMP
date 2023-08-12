@@ -2,7 +2,9 @@ from queue import PriorityQueue
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse import csgraph
-    
+
+NO_PATH_INDICATOR = -9999
+
 def dijkstra(graph, start_node):
     n = len(graph)
     D = {v : float('inf') for v in range(n)}
@@ -30,11 +32,16 @@ def dijkstra(graph, start_node):
     return D, shortest_path
 
 # todo adapt output
-def scipy_dijkstra(graph, start_node):
+def dijkstra_scipy(graph, start_node):
     sparse_edges = csr_matrix(graph)
     return csgraph.dijkstra(csgraph=sparse_edges, 
                             directed=True, 
                             return_predecessors=True)
+
+def floyd_warshall(graph):
+    sparse_graph = csr_matrix(graph)
+    _, predecessors = csgraph.floyd_warshall(csgraph=sparse_graph, directed=True, return_predecessors=True)
+    return predecessors
 
 
 def _initialize_graph(num_of_vertices):

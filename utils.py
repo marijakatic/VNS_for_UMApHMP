@@ -12,6 +12,8 @@ import git
 from ioutils import parse_input
 from ioutils import parse_solutions
 from graph_utils import dijkstra
+from graph_utils import floyd_warshall
+from graph_utils import NO_PATH_INDICATOR
 from plot_utils import plot_two_solutions
 from global_parameters import NEIGHBOURHOOD_TYPES
 
@@ -49,7 +51,7 @@ class Solution:
         return f"Solution(hubs={self.hubs})"
 
     def _get_cost(self):
-        return get_solution_cost(self.hubs, self.problem)
+        return get_solution_cost_fw(self.hubs, self.problem)
 
     def get_neighbourhood(self, neighbourhood_type):
         if neighbourhood_type == 'swap':
@@ -94,8 +96,7 @@ def get_flow_from_hubs(hubs, n, alpha, delta, ksi, distances, demand):
     paths = allocate_paths(n, hubs, distances, discounts)
     return get_flow_from_paths(n, paths, demand)
     
-
-def allocate_paths(n, hubs, distances, discounts):
+def _get_valid_cost_graph(n, hubs, distances, discounts):
     nodes = get_nodes(n)
     cost_graph = distances*discounts
     for A in nodes:
@@ -103,6 +104,13 @@ def allocate_paths(n, hubs, distances, discounts):
             # connection between non-hub nodes is not allowed
             if A != B and (A not in hubs) and (B not in hubs):
                 cost_graph[A, B] = 0
+    return cost_graph
+
+def allocate_paths(n, hubs, distances, discounts):
+    nodes = get_nodes(n)
+    # prepare graph
+    cost_graph = _get_valid_cost_graph(n, hubs, distances, discounts)
+    # calulate paths
     paths = []
     for A in nodes:
         _, paths_from_A = dijkstra(cost_graph, A)
@@ -110,7 +118,6 @@ def allocate_paths(n, hubs, distances, discounts):
             if A != B:
                 pathAB = paths_from_A[B]
                 paths.append(pathAB)
-                
     # by problem definition demand from a node to itself can be non-zero value
     # in that case, given demand should make a circuit through a hub and return to the node
     # although illogical at first glance, it could make sense in some setups
@@ -126,6 +133,36 @@ def get_solution_cost(hubs, problem):
     paths = allocate_paths(problem.n, hubs, problem.distances, discounts)
     flow = get_flow_from_paths(problem.n, paths, problem.demand)
     return get_total_cost(flow, problem.distances, discounts)
+
+def get_solution_cost_fw(hubs, problem):
+    total_cost = 0
+    nodes = get_nodes(problem.n)
+    discounts = get_discount_matrix(problem.n, hubs, problem.alpha, problem.delta, problem.ksi)
+    # prepare graph
+    cost_graph = _get_valid_cost_graph(problem.n, hubs, problem.distances, discounts)
+    # calculate cost
+    predecessors = floyd_warshall(cost_graph)
+    for orig in nodes:
+        for dest in nodes:
+            left = predecessors[orig, dest]
+            right = dest
+            while True:
+                if left == NO_PATH_INDICATOR:
+                    break
+                total_cost += problem.demand[orig, dest] * cost_graph[left, right]
+                if left == orig:
+                    break
+                right = left
+                left = predecessors[orig, left]
+    # origin equals destination paths
+    for node in nodes:
+        if node in hubs:
+            continue
+        closest_hub = _closest(node, hubs, cost_graph)
+        # adding cost of [node -> closest_hub -> node] path
+        total_cost += problem.demand[node, node] * problem.distances[node, closest_hub] * discounts[node, closest_hub] + \
+                      problem.demand[node, node] * problem.distances[closest_hub, node] * discounts[closest_hub, node]
+    return total_cost
 
 def get_swap_neighbourhood(hubs, n):
     neighbourhood = []

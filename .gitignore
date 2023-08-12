@@ -165,3 +165,7 @@ dev_*
 # generate scripts executable
 generate
 
+output/basic_VNS_comparison_with_optimal_0_*
+output/basic_VNS_diversification_0_*
+output/basic_VNS_initial_solution_0_*
+
