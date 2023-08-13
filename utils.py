@@ -37,9 +37,10 @@ class ProblemInstance:
         return (self.n, self.p) < (obj.n, obj.p)
 
 class Solution:
-    def __init__(self, hubs, problem, cost=None):
+    def __init__(self, hubs, problem, use_c=False, cost=None):
         self.hubs = hubs
         self.problem = problem
+        self.use_c = use_c
         if cost is not None:
             self.cost = cost
         else:
@@ -51,7 +52,7 @@ class Solution:
         return f"Solution(hubs={self.hubs})"
 
     def _get_cost(self):
-        return get_solution_cost_fw(self.hubs, self.problem)
+        return get_solution_cost_fw(self.hubs, self.problem, self.use_c)
 
     def get_neighbourhood(self, neighbourhood_type):
         if neighbourhood_type == 'swap':
@@ -142,41 +143,48 @@ def _prepare(hubs, problem):
     # calculate cost
     return nodes, discounts, cost_graph
 
-def _normal_paths_calulation(total_cost, problem, predecessors, nodes, cost_graph):
-    for orig in nodes:
-        for dest in nodes:
+def _normal_paths_calulation(n, demand, cost_graph, predecessors):
+    tmp_total_cost = 0
+    for orig in range(n):
+        for dest in range(n):
             left = predecessors[orig, dest]
             right = dest
             while True:
                 if left == NO_PATH_INDICATOR:
                     break
-                total_cost += problem.demand[orig, dest] * cost_graph[left, right]
+                tmp_total_cost += demand[orig, dest] * cost_graph[left, right]
                 if left == orig:
                     break
                 right = left
                 left = predecessors[orig, left]
-    return total_cost
+    return tmp_total_cost
 
-def _peculiar_paths_calulations(total_cost, nodes, hubs, problem, cost_graph, discounts):
-    for node in nodes:
+def _peculiar_paths_calulations(n, problem, hubs, cost_graph, discounts):
+    tmp_total_cost = 0
+    for node in range(n):
         if node in hubs:
             continue
         closest_hub = _closest(node, hubs, cost_graph)
         # adding cost of [node -> closest_hub -> node] path
-        total_cost += problem.demand[node, node] * problem.distances[node, closest_hub] * discounts[node, closest_hub] + \
+        tmp_total_cost += problem.demand[node, node] * problem.distances[node, closest_hub] * discounts[node, closest_hub] + \
                       problem.demand[node, node] * problem.distances[closest_hub, node] * discounts[closest_hub, node]
-    return total_cost
+    return tmp_total_cost
 
-def get_solution_cost_fw(hubs, problem):
+from wrapc.wrapc import normal_paths_calulation_c
+
+def get_solution_cost_fw(hubs, problem, use_c=False):
     total_cost = 0
     nodes, discounts, cost_graph = _prepare(hubs, problem)
     # calculate cost
     predecessors = floyd_warshall(cost_graph)
 
-    total_cost = _normal_paths_calulation(total_cost, problem, predecessors, nodes, cost_graph)
+    if use_c:
+        total_cost += normal_paths_calulation_c(problem.n, problem.demand, cost_graph, predecessors)
+    else:
+        total_cost += _normal_paths_calulation(problem.n, problem.demand, cost_graph, predecessors)
 
     # origin equals destination paths
-    total_cost = _peculiar_paths_calulations(total_cost, nodes, hubs, problem, cost_graph, discounts)
+    total_cost += _peculiar_paths_calulations(problem.n, problem, hubs, cost_graph, discounts)
 
     return total_cost
 

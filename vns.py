@@ -70,11 +70,11 @@ def get_best_solution(solutions):
     # solution ← argmin{f(s)}, s ∈ solutions
     return min(solutions, key=attrgetter('cost'))
 
-def local_search_best_improvement(solution, neighbourhood_type):
+def local_search_best_improvement(solution, neighbourhood_type, use_c):
     ''' Best Improvement Search'''
     while True:
         curr_solution = solution
-        neighbourhood = [Solution(neighbour, solution.problem)
+        neighbourhood = [Solution(neighbour, solution.problem, use_c=use_c)
                      for neighbour in solution.get_neighbourhood(neighbourhood_type)]
         solution = get_best_solution(neighbourhood)
         # if no direction of descent anymore
@@ -82,14 +82,14 @@ def local_search_best_improvement(solution, neighbourhood_type):
             break
     return curr_solution
 
-def local_search_first_improvement(solution, neighbourhood_type):
+def local_search_first_improvement(solution, neighbourhood_type, use_c):
     '''First Improvement Search'''
     while True:
         curr_solution = solution
         # take the first better solution, not the best, from neighbourhood
         neighbourhood = solution.get_neighbourhood(neighbourhood_type)
         for neighbour in neighbourhood:
-            neighbour = Solution(neighbour, solution.problem)
+            neighbour = Solution(neighbour, solution.problem, use_c)
             # early stopping, when first descent is found
             if neighbour.cost < curr_solution.cost:
                 curr_solution = neighbour
@@ -99,17 +99,18 @@ def local_search_first_improvement(solution, neighbourhood_type):
             break
     return curr_solution
 
-def _shake_simple(solution, neighbourhood_type):
+def _shake_simple(solution, neighbourhood_type, use_c):
     return Solution(random.choice(solution.get_neighbourhood(neighbourhood_type)), 
-                    solution.problem)
+                    solution.problem,
+                    use_c)
 
-def shake(solution, neighbourhood_type, k=1):
+def shake(solution, neighbourhood_type, use_c, k=1):
     # For k > 1 shaking is significantly less eficient, because cost caluclations are needed.
     # That's why for k == 1 we still want to use "simple" shaking.
     if k == 1:
-        return _shake_simple(solution, neighbourhood_type)
+        return _shake_simple(solution, neighbourhood_type, use_c=use_c)
 
-    neighbourhood = [Solution(neighbour, solution.problem)
+    neighbourhood = [Solution(neighbour, solution.problem, use_c)
                     for neighbour in solution.get_neighbourhood(neighbourhood_type)]
     random_k_sample = random.sample(neighbourhood, k)
     return get_best_solution(random_k_sample)
@@ -118,6 +119,7 @@ def basic_VNS(problem,
               diversification_param=0,
               initialization_method=get_initial_solution_robust,
               local_search=local_search_best_improvement,
+              use_c=False,
               max_iter=MAX_ITER,
               precision=PRECISION,
               verbose=False):
@@ -148,7 +150,7 @@ def basic_VNS(problem,
     shake_param_k = int((problem.p*(problem.n - problem.p) - 1)*diversification_param + 1)
 
     # initialize solution
-    solution = Solution(initialization_method(problem.n, problem.p, problem.distances), problem)
+    solution = Solution(initialization_method(problem.n, problem.p, problem.distances), problem, use_c=use_c)
     optimal_solution = solution
     if verbose == True:
         iter_range = tqdm(range(max_iter))
@@ -158,11 +160,11 @@ def basic_VNS(problem,
         i = 0
         while i < len(NEIGHBOURHOOD_TYPES):
             # Shaking
-            rand_solution = shake(solution, NEIGHBOURHOOD_TYPES[i], shake_param_k)
+            rand_solution = shake(solution, NEIGHBOURHOOD_TYPES[i], use_c, shake_param_k)
             # print("shake")
             # print(f"rand_solution={rand_solution}")
             # Local search
-            local_min = local_search(rand_solution, NEIGHBOURHOOD_TYPES[i])
+            local_min = local_search(rand_solution, NEIGHBOURHOOD_TYPES[i], use_c)
             # print("local_search")
             # print(f"local_min={local_min}")
             # Change neighbourhood
@@ -179,4 +181,5 @@ def basic_VNS(problem,
         if problem.optimal_cost is not None \
             and abs(optimal_solution.cost - problem.optimal_cost) < precision:
             break
+        # print(optimal_solution.cost)
     return optimal_solution
