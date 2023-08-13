@@ -134,14 +134,15 @@ def get_solution_cost(hubs, problem):
     flow = get_flow_from_paths(problem.n, paths, problem.demand)
     return get_total_cost(flow, problem.distances, discounts)
 
-def get_solution_cost_fw(hubs, problem):
-    total_cost = 0
+def _prepare(hubs, problem):
     nodes = get_nodes(problem.n)
     discounts = get_discount_matrix(problem.n, hubs, problem.alpha, problem.delta, problem.ksi)
     # prepare graph
     cost_graph = _get_valid_cost_graph(problem.n, hubs, problem.distances, discounts)
     # calculate cost
-    predecessors = floyd_warshall(cost_graph)
+    return nodes, discounts, cost_graph
+
+def _normal_paths_calulation(total_cost, problem, predecessors, nodes, cost_graph):
     for orig in nodes:
         for dest in nodes:
             left = predecessors[orig, dest]
@@ -154,7 +155,9 @@ def get_solution_cost_fw(hubs, problem):
                     break
                 right = left
                 left = predecessors[orig, left]
-    # origin equals destination paths
+    return total_cost
+
+def _peculiar_paths_calulations(total_cost, nodes, hubs, problem, cost_graph, discounts):
     for node in nodes:
         if node in hubs:
             continue
@@ -162,6 +165,19 @@ def get_solution_cost_fw(hubs, problem):
         # adding cost of [node -> closest_hub -> node] path
         total_cost += problem.demand[node, node] * problem.distances[node, closest_hub] * discounts[node, closest_hub] + \
                       problem.demand[node, node] * problem.distances[closest_hub, node] * discounts[closest_hub, node]
+    return total_cost
+
+def get_solution_cost_fw(hubs, problem):
+    total_cost = 0
+    nodes, discounts, cost_graph = _prepare(hubs, problem)
+    # calculate cost
+    predecessors = floyd_warshall(cost_graph)
+
+    total_cost = _normal_paths_calulation(total_cost, problem, predecessors, nodes, cost_graph)
+
+    # origin equals destination paths
+    total_cost = _peculiar_paths_calulations(total_cost, nodes, hubs, problem, cost_graph, discounts)
+
     return total_cost
 
 def get_swap_neighbourhood(hubs, n):
