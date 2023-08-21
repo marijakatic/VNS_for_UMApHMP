@@ -4,9 +4,11 @@ from utils import Solution
 from operator import attrgetter
 import random
 from tqdm import tqdm
+import time
 
 from utils import NEIGHBOURHOOD_TYPES
 
+T_MAX = 60 # in seconds
 MAX_ITER = 25
 PRECISION = 0.0001
 
@@ -118,7 +120,7 @@ def basic_VNS(problem,
               diversification_param=0,
               initialization_method=get_initial_solution_robust,
               local_search=local_search_best_improvement,
-              use_c=True,
+              use_c=False,
               neighbourhood_types=NEIGHBOURHOOD_TYPES[:1],
               max_iter=MAX_ITER,
               precision=PRECISION,
@@ -142,6 +144,8 @@ def basic_VNS(problem,
     For instance, a k-interchange neighbourhood may be reduced by repeating k times random add followed by best drop moves."
     Variable neighborhood search: Methods and applications, Pierre Hansen, Nenad Mladenovic and Jose A. Moreno Perez
     '''
+    starttime = time.time()
+
     if diversification_param < 0 or diversification_param > 1:
         raise ValueError("diversification_param is expected to be from [0, 1] interval.")
 
@@ -179,8 +183,15 @@ def basic_VNS(problem,
         # Update optimal solution
         if solution.cost < optimal_solution.cost:
             optimal_solution = solution
+
+        # if we know the optimal solution and we reached it we stop
         if problem.optimal_cost is not None \
             and abs(optimal_solution.cost - problem.optimal_cost) < precision:
             break
-        # print(optimal_solution.cost)
+
+        # elapsed time as additional stopping criterion
+        now = time.time()
+        if now-starttime >= T_MAX:
+            break
+        
     return optimal_solution
