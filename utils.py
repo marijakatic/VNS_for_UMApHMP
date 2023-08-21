@@ -13,6 +13,7 @@ from ioutils import parse_input
 from ioutils import parse_solutions
 from graph_utils import dijkstra
 from graph_utils import floyd_warshall
+from graph_utils import floyd_warshall_py
 from graph_utils import NO_PATH_INDICATOR
 from graph_utils import NO_EDGE_INDICATOR
 from plot_utils import plot_two_solutions
@@ -102,7 +103,7 @@ def _get_valid_cost_graph(n, hubs, distances, discounts):
         for B in nodes:
             # connection between non-hub nodes is not allowed
             if A != B and (A not in hubs) and (B not in hubs):
-                cost_graph[A, B] = 0
+                cost_graph[A, B] = NO_EDGE_INDICATOR
     return cost_graph
 
 def allocate_paths(n, hubs, distances, discounts):
@@ -169,12 +170,13 @@ def _peculiar_paths_calulations(n, problem, hubs, cost_graph, discounts):
     return tmp_total_cost
 
 from wrapc.wrapc import normal_paths_calulation_c
+from wrapc.wrapc import floyd_warshall_c
 
 def get_solution_cost_fw(hubs, problem, use_c=False):
     total_cost = 0
     nodes, discounts, cost_graph = _prepare(hubs, problem)
     # calculate cost
-    predecessors = floyd_warshall(cost_graph)
+    predecessors = floyd_warshall_c(cost_graph, hubs, problem.n, problem.p)
 
     if use_c:
         total_cost += normal_paths_calulation_c(problem.n, problem.demand, cost_graph, predecessors)

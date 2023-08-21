@@ -2,6 +2,8 @@ import unittest
 import graph_utils
 import numpy as np
 
+from wrapc.wrapc import floyd_warshall_c
+
 class GraphTestCase(unittest.TestCase):
 
     def test_givenBasicGraph_whenDijkstra_thenShortestPathsReturned(self):
@@ -48,14 +50,111 @@ class GraphTestCase(unittest.TestCase):
         graph_utils._add_edge(g, 2, 0, 2)
         graph_utils._add_edge(g, 2, 3, 3)
         # WHEN
-        predecessors = graph_utils.floyd_warshall(g).tolist()
+        predecessors = graph_utils.floyd_warshall(g)
         # THEN
         predecessors_expected = [[-9999,    0,     0,     1],
                                  [   1, -9999,     0,     1],
                                  [   2,     0, -9999,     2],
                                  [   1,     3,     3, -9999]]
-        self.assertEqual(predecessors, predecessors_expected)
+        self.assertEqual(predecessors.tolist(), predecessors_expected)
 
+    def test_givenBasicGraph_whenFloydWarshalPy_thenShortestPathsReturned(self):
+        # GIVEN
+        g = graph_utils._initialize_graph(4)
+
+        graph_utils._add_edge(g, 0, 0, 0)
+        graph_utils._add_edge(g, 1, 1, 0)
+        graph_utils._add_edge(g, 2, 2, 0)
+        graph_utils._add_edge(g, 3, 3, 0)
+
+        graph_utils._add_edge(g, 0, 1, 1)
+        graph_utils._add_edge(g, 0, 2, 2)
+        graph_utils._add_edge(g, 1, 3, 1)
+        graph_utils._add_edge(g, 2, 0, 2)
+        graph_utils._add_edge(g, 2, 3, 3)
+
+        # WHEN
+        predecessors = graph_utils.floyd_warshall_py(g, [0,1,2,3])
+        # THEN
+        predecessors_expected =[[-9999,    0,     0,      1],
+                                 [   1, -9999,     0,     1],
+                                 [   2,     0, -9999,     2],
+                                 [   1,    3,     3, -9999]]
+        self.assertEqual(predecessors.tolist(), predecessors_expected)
+
+
+    def test_givenBasicGraph_whenFloydWarshalPyWithLessHubs_thenShortestPathsReturned(self):
+        # GIVEN
+        g = graph_utils._initialize_graph(4)
+
+        graph_utils._add_edge(g, 0, 0, 0)
+        graph_utils._add_edge(g, 1, 1, 0)
+        graph_utils._add_edge(g, 2, 2, 0)
+        graph_utils._add_edge(g, 3, 3, 0)
+
+        graph_utils._add_edge(g, 0, 1, 1)
+        graph_utils._add_edge(g, 0, 2, 2)
+        graph_utils._add_edge(g, 1, 3, 1)
+        graph_utils._add_edge(g, 2, 0, 2)
+        graph_utils._add_edge(g, 2, 3, 3)
+
+        # WHEN
+        predecessors = graph_utils.floyd_warshall_py(g, [0])
+        # THEN
+        predecessors_expected =[[-9999,    0,     0,  -9999],
+                                 [   1, -9999,     0,     1],
+                                 [   2,     0, -9999,     2],
+                                 [-9999,    3,     3, -9999]]
+        self.assertEqual(predecessors.tolist(), predecessors_expected)
+
+    def test_givenBasicGraph_whenMyFloydWarshalC_thenShortestPathsReturned(self):
+        # GIVEN
+        g = graph_utils._initialize_graph(4)
+
+        graph_utils._add_edge(g, 0, 0, 0)
+        graph_utils._add_edge(g, 1, 1, 0)
+        graph_utils._add_edge(g, 2, 2, 0)
+        graph_utils._add_edge(g, 3, 3, 0)
+
+        graph_utils._add_edge(g, 0, 1, 1)
+        graph_utils._add_edge(g, 0, 2, 2)
+        graph_utils._add_edge(g, 1, 3, 1)
+        graph_utils._add_edge(g, 2, 0, 2)
+        graph_utils._add_edge(g, 2, 3, 3)
+
+        # WHEN
+        predecessors = floyd_warshall_c(g, [0,1,2,3], 4, 4)
+        # THEN
+        predecessors_expected = [[-9999,    0,     0,     1],
+                                 [   1, -9999,     0,     1],
+                                 [   2,     0, -9999,     2],
+                                 [   1,     3,     3, -9999]]
+        self.assertEqual(predecessors.tolist(), predecessors_expected)
+
+
+    def test_givenBasicGraph_whenMyFloydWarshalCWithLessHubs_thenShortestPathsReturned(self):
+        # GIVEN
+        g = graph_utils._initialize_graph(4)
+
+        graph_utils._add_edge(g, 0, 0, 0)
+        graph_utils._add_edge(g, 1, 1, 0)
+        graph_utils._add_edge(g, 2, 2, 0)
+        graph_utils._add_edge(g, 3, 3, 0)
+
+        graph_utils._add_edge(g, 0, 1, 1)
+        graph_utils._add_edge(g, 0, 2, 2)
+        graph_utils._add_edge(g, 1, 3, 1)
+        graph_utils._add_edge(g, 2, 0, 2)
+        graph_utils._add_edge(g, 2, 3, 3)
+
+        # WHEN
+        predecessors = floyd_warshall_c(g, [0], 4, 1)
+        # THEN
+        predecessors_expected =[[-9999,    0,     0,  -9999],
+                                 [   1, -9999,     0,     1],
+                                 [   2,     0, -9999,     2],
+                                 [-9999,    3,     3, -9999]]
+        self.assertEqual(predecessors.tolist(), predecessors_expected)
 
 if __name__ == '__main__':
     unittest.main()
