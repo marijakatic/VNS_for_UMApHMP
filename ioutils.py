@@ -4,8 +4,8 @@ import re
 def parse_solutions(filepath):
     solutions = {}
     with open(filepath, mode='r', encoding='utf-8-sig') as file:
-        # read lines ignoring empty
-        lines = [line for line in file.readlines() if line.strip()]
+        # read lines ignoring empty lines and comments
+        lines = [line for line in file.readlines() if line.strip() and not line.startswith('#')]
         for sol, obj, hubs in _chunks(lines, 3):
             match = re.match('Solution for n=(.*), p=(.*) :', sol)
             n = int(match.group(1))
@@ -16,7 +16,10 @@ def parse_solutions(filepath):
             else:
                 objective = None
             match = re.match('Hubs : (.*)', hubs)
-            hubs = _convert_list(match.group(1).split(', '), int)
+            if match is not None:
+                hubs = _convert_list(match.group(1).split(', '), int)
+            else:
+                hubs = None
             solutions[n,p] = {"objective": objective, "hubs": hubs}
     return solutions
 

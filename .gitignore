@@ -170,6 +170,7 @@ output/basic_VNS_diversification_0_*
 output/basic_VNS_initial_solution_0_*
 output/basic_VNS_local_search_0_*
 output/basic_VNS_using_c_0_*
+output/basic_VNS_3_neighbourhoods_0_*
 
 output/profile_stats
 
