@@ -2,8 +2,8 @@ from cffi import FFI
 
 ffibuilder = FFI()
 ffibuilder.cdef("double normal_paths_calculation(int n, double** demand, double** cost_graph, int** predecessors);")
-ffibuilder.set_source("py_normal_paths_calculation",'#include "wrapc/normal_paths_calculation.h"',
-                        sources=["wrapc/normal_paths_calculation.c"])
+ffibuilder.set_source("py_vns",'#include "wrapc/vns.h"',
+                        sources=["wrapc/vns.c"])
 ffibuilder.compile()
 
 def _cast_matrix_double(matrix, ffi):
@@ -20,7 +20,7 @@ def _cast_matrix_int(matrix, ffi):
         ap[i] = ptr + i*matrix.shape[1]
     return ap
 
-from py_normal_paths_calculation.lib import normal_paths_calculation
+from py_vns.lib import normal_paths_calculation
 
 def normal_paths_calulation_c(n, demand, cost_graph, predecessors):
     return normal_paths_calculation(n,
