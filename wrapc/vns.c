@@ -291,6 +291,17 @@ def get_solution_cost_fw(hubs, problem, use_c=False):
     return total_cost
 */
 
+void free_matrix_double(double** matrix, int n) {
+    for(int i = 0; i < n; i++)
+        free(matrix[i]);
+    free(matrix);
+}
+
+void free_matrix_int(int** matrix, int n) {
+    for(int i = 0; i < n; i++)
+        free(matrix[i]);
+    free(matrix);
+}
 
 double get_solution_cost_c_impl(int* hubs, int n, int p, double** distances, double** demand, double alpha, double delta, double ksi) {
     double total_cost = 0;
@@ -305,9 +316,9 @@ double get_solution_cost_c_impl(int* hubs, int n, int p, double** distances, dou
     total_cost += peculiar_paths_calulation(n, p, demand, hubs, hub_bitmap, cost_graph);
 
     free(hub_bitmap);
-    free(discounts);
-    free(cost_graph);
-    free(predecessors);
+    free_matrix_double(discounts, n);
+    free_matrix_double(cost_graph, n);
+    free_matrix_int(predecessors, n);
     // free(distances);
     // free(demand);
 
