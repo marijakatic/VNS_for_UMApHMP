@@ -18,6 +18,9 @@ from graph_utils import NO_PATH_INDICATOR
 from graph_utils import NO_EDGE_INDICATOR
 from plot_utils import plot_two_solutions
 
+from wrapc.wrapc import normal_paths_calulation_c
+from wrapc.wrapc import floyd_warshall_c
+from wrapc.wrapc import get_solution_cost_c
 
 class ProblemInstance:
     def __init__(self, n, p, alpha, delta, ksi, node_coordinates, demand, optimal_cost=None):
@@ -53,7 +56,10 @@ class Solution:
         return f"Solution(hubs={self.hubs})"
 
     def _get_cost(self):
-        return get_solution_cost_fw(self.hubs, self.problem, self.use_c)
+        if self.use_c:
+            return get_solution_cost_c(self.hubs, self.problem)
+        else:
+            return get_solution_cost_fw(self.hubs, self.problem, False)
 
     def get_neighbourhood(self, get_neighbourhood):
         if self.neighbourhood == None:
@@ -168,9 +174,6 @@ def _peculiar_paths_calulations(n, problem, hubs, cost_graph, discounts):
         tmp_total_cost += problem.demand[node, node] * problem.distances[node, closest_hub] * discounts[node, closest_hub] + \
                       problem.demand[node, node] * problem.distances[closest_hub, node] * discounts[closest_hub, node]
     return tmp_total_cost
-
-from wrapc.wrapc import normal_paths_calulation_c
-from wrapc.wrapc import floyd_warshall_c
 
 def get_solution_cost_fw(hubs, problem, use_c=False):
     total_cost = 0
