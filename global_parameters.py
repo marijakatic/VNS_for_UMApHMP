@@ -1,1 +1,0 @@
-NEIGHBOURHOOD_TYPES = ['swap']

@@ -5,8 +5,7 @@ from operator import attrgetter
 import random
 from tqdm import tqdm
 
-from global_parameters import NEIGHBOURHOOD_TYPES
-
+from utils import NEIGHBOURHOOD_TYPES
 
 MAX_ITER = 25
 PRECISION = 0.0001
@@ -119,7 +118,8 @@ def basic_VNS(problem,
               diversification_param=0,
               initialization_method=get_initial_solution_robust,
               local_search=local_search_best_improvement,
-              use_c=False,
+              use_c=True,
+              neighbourhood_types=NEIGHBOURHOOD_TYPES[:1],
               max_iter=MAX_ITER,
               precision=PRECISION,
               verbose=False):
@@ -158,13 +158,14 @@ def basic_VNS(problem,
         iter_range = range(max_iter)
     for iteration in iter_range:
         i = 0
-        while i < len(NEIGHBOURHOOD_TYPES):
+        while i < len(neighbourhood_types):
             # Shaking
-            rand_solution = shake(solution, NEIGHBOURHOOD_TYPES[i], use_c, shake_param_k)
+            rand_solution = shake(solution, neighbourhood_types[i], use_c, shake_param_k)
             # print("shake")
             # print(f"rand_solution={rand_solution}")
             # Local search
-            local_min = local_search(rand_solution, NEIGHBOURHOOD_TYPES[i], use_c)
+            # let's do local search always just in the smalles neighbourhood, but shake in wider neighbourhoods
+            local_min = local_search(rand_solution, neighbourhood_types[0], use_c)
             # print("local_search")
             # print(f"local_min={local_min}")
             # Change neighbourhood

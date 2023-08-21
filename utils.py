@@ -14,8 +14,8 @@ from ioutils import parse_solutions
 from graph_utils import dijkstra
 from graph_utils import floyd_warshall
 from graph_utils import NO_PATH_INDICATOR
+from graph_utils import NO_EDGE_INDICATOR
 from plot_utils import plot_two_solutions
-from global_parameters import NEIGHBOURHOOD_TYPES
 
 
 class ProblemInstance:
@@ -46,7 +46,7 @@ class Solution:
         else:
             self.cost = self._get_cost()
         # We'll caluclate the neighbourhood only when it's needed for the first time
-        self.swap_neighbourhood = None
+        self.neighbourhood = None
 
     def __str__(self):
         return f"Solution(hubs={self.hubs})"
@@ -54,13 +54,11 @@ class Solution:
     def _get_cost(self):
         return get_solution_cost_fw(self.hubs, self.problem, self.use_c)
 
-    def get_neighbourhood(self, neighbourhood_type):
-        if neighbourhood_type == 'swap':
-            if self.swap_neighbourhood == None:
-                self.swap_neighbourhood = get_swap_neighbourhood(self.hubs, self.problem.n)
-            return self.swap_neighbourhood
-        else:
-            raise ValueError(f"Unknown neighbourhood type. Supported neighbourhood types: {NEIGHBOURHOOD_TYPES}")
+    def get_neighbourhood(self, get_neighbourhood):
+        if self.neighbourhood == None:
+            self.neighbourhood = get_neighbourhood(self.hubs, self.problem.n)
+        return self.neighbourhood
+
 
 def get_nodes(n):
     return list(range(n))
@@ -197,6 +195,38 @@ def get_swap_neighbourhood(hubs, n):
             neighbourhood.append([h for h in hubs if h != hub] + [non_hub])
     return neighbourhood
 
+def get_swap2_neighbourhood(hubs, n):
+    neighbourhood = []
+    non_hubs = [node for node in range(n) if node not in hubs]
+    for hub1 in hubs:
+        for hub2 in hubs:
+            if hub1 == hub2:
+                continue
+            for non_hub1 in non_hubs:
+                for non_hub2 in non_hubs:
+                    if non_hub1 == non_hub2:
+                        continue
+                    # swap the hub with the non-hub
+                    neighbourhood.append([h for h in hubs if h not in [hub1, hub2]] + [non_hub1, non_hub2])
+    return neighbourhood
+
+def get_swap3_neighbourhood(hubs, n):
+    neighbourhood = []
+    non_hubs = [node for node in range(n) if node not in hubs]
+    for hub1 in hubs:
+        for hub2 in hubs:
+            for hub3 in hubs:
+                if hub1 == hub2 or hub1 == hub3 or hub2 == hub3:
+                    continue
+                for non_hub1 in non_hubs:
+                    for non_hub2 in non_hubs:
+                        for non_hub3 in non_hubs:
+                            if non_hub1 == non_hub2 or non_hub1 == non_hub2 or non_hub2 == non_hub3:
+                                continue
+                            # swap the hub with the non-hub
+                            neighbourhood.append([h for h in hubs if h not in [hub1, hub2, hub3]] + [non_hub1, non_hub2, non_hub3])
+    return neighbourhood
+
 def bitmap(n, list):
     return [1 if i in list else 0 for i in range(n)]
 
@@ -288,3 +318,7 @@ def _orig_equals_dest_paths(nodes, hubs, cost_graph):
 def _closest(node, hubs, cost_graph):
     hub_dist = {hub: cost_graph[node, hub] for hub in hubs}
     return min(hub_dist, key=hub_dist.get)
+
+
+
+NEIGHBOURHOOD_TYPES = [get_swap_neighbourhood, get_swap2_neighbourhood, get_swap3_neighbourhood]

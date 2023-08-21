@@ -72,7 +72,7 @@ def _plot_solution(ax, points, hubs, flow, title='', point_labels='numbers', plo
 
       # Ephasize connections
       if flow[i,k] > 0:
-        ax.plot(endpoints_x, endpoints_y, c='grey', ls='--', lw=linewidth, alpha=0.5)
+        ax.plot(endpoints_x, endpoints_y, c='black', ls='-', lw=linewidth, alpha=0.5)
       # Ephasize connections between hubs
       if hubs[i] == 1 and hubs[k] == 1:
         ax.plot(endpoints_x, endpoints_y, c='black', ls='-', lw=linewidth)

@@ -2,9 +2,7 @@ from docplex.mp.model import Model
 import datetime
 import logging
 import numpy as np
-
-class Solution:
-    pass
+from utils import Solution
 
 def get_flow_from_XYZ(n, X_allocated, Y_allocated, Z_allocated):
     """Calculates the flow matrix, the flow between pairs of nodes, given allocated variables from 
@@ -36,6 +34,11 @@ def get_flow_from_XYZ(n, X_allocated, Y_allocated, Z_allocated):
                 flow[k,l] += Y_allocated[i,k,l]
 
     return flow
+
+def solve_with_CPLEX(problem):
+    M, X, Y, Z, H = get_umaphmp_model(problem.n, problem.p, problem.alpha, problem.delta, problem.ksi, problem.distances, problem.demand)
+    solution = M.solve(log_output=True)
+    return Solution(None, problem, False, solution.objective_value)
 
 def get_umaphmp_model(n, p, alpha, delta, ksi, C, W, formulation='EK', verbose=True):
     """ Creates CPLEX model in a given formulation
