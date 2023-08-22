@@ -8,8 +8,8 @@ import time
 
 from utils import NEIGHBOURHOOD_TYPES
 
-T_MAX = 60 # in seconds
-MAX_ITER = 25
+T_MAX = 120 # in seconds
+MAX_ITER = 100
 PRECISION = 0.0001
 
 def get_initial_solution_robust(n, p, distances):
@@ -120,7 +120,7 @@ def basic_VNS(problem,
               diversification_param=0,
               initialization_method=get_initial_solution_robust,
               local_search=local_search_best_improvement,
-              use_c=False,
+              use_c=True,
               neighbourhood_types=NEIGHBOURHOOD_TYPES[:1],
               max_iter=MAX_ITER,
               precision=PRECISION,
@@ -158,28 +158,23 @@ def basic_VNS(problem,
     optimal_solution = solution
     if verbose == True:
         iter_range = tqdm(range(max_iter))
-    else: 
+    else:
         iter_range = range(max_iter)
     for iteration in iter_range:
         i = 0
         while i < len(neighbourhood_types):
             # Shaking
             rand_solution = shake(solution, neighbourhood_types[i], use_c, shake_param_k)
-            # print("shake")
-            # print(f"rand_solution={rand_solution}")
             # Local search
             # let's do local search always just in the smalles neighbourhood, but shake in wider neighbourhoods
             local_min = local_search(rand_solution, neighbourhood_types[0], use_c)
-            # print("local_search")
-            # print(f"local_min={local_min}")
             # Change neighbourhood
             if local_min.cost < solution.cost:
                 solution = local_min
-                # reset loop 
+                # reset loop
                 i = 0
             else:
                 i += 1
-            # print(i)
         # Update optimal solution
         if solution.cost < optimal_solution.cost:
             optimal_solution = solution
@@ -193,5 +188,95 @@ def basic_VNS(problem,
         now = time.time()
         if now-starttime >= T_MAX:
             break
-        
+
+    return optimal_solution
+
+
+def reduced_VNS(problem,
+              diversification_param=0.3,
+              initialization_method=get_initial_solution_robust,
+              use_c=True,
+              neighbourhood_types=NEIGHBOURHOOD_TYPES[:1],
+              max_iter=MAX_ITER,
+              precision=PRECISION,
+              verbose=False):
+
+    starttime = time.time()
+
+    if diversification_param < 0 or diversification_param > 1:
+        raise ValueError("diversification_param is expected to be from [0, 1] interval.")
+
+    # get shaking intensity from diversification_param
+    # the formula bellow maps [0, 1] into {1, 2... p(n-p)}; p(n-p) == len(neighbourghood)
+    shake_param_k = int((problem.p*(problem.n - problem.p) - 1)*diversification_param + 1)
+
+    # initialize solution
+    solution = Solution(initialization_method(problem.n, problem.p, problem.distances), problem, use_c=use_c)
+    optimal_solution = solution
+    if verbose == True:
+        iter_range = tqdm(range(max_iter))
+    else:
+        iter_range = range(max_iter)
+    for iteration in iter_range:
+        i = 0
+        while i < len(neighbourhood_types):
+            # Shaking
+            local_min = shake(solution, neighbourhood_types[i], use_c, shake_param_k)
+            # Change neighbourhood
+            if local_min.cost < solution.cost:
+                solution = local_min
+                # reset loop
+                i = 0
+            else:
+                i += 1
+        # Update optimal solution
+        if solution.cost < optimal_solution.cost:
+            optimal_solution = solution
+
+        # if we know the optimal solution and we reached it we stop
+        if problem.optimal_cost is not None \
+            and abs(optimal_solution.cost - problem.optimal_cost) < precision:
+            break
+
+    return optimal_solution
+
+def deterministic_VNS(problem,
+              initialization_method=get_initial_solution_robust,
+              local_search=local_search_best_improvement,
+              use_c=True,
+              neighbourhood_types=NEIGHBOURHOOD_TYPES[:1],
+              max_iter=MAX_ITER,
+              precision=PRECISION,
+              verbose=False):
+
+    starttime = time.time()
+
+    # initialize solution
+    solution = Solution(initialization_method(problem.n, problem.p, problem.distances), problem, use_c=use_c)
+    optimal_solution = solution
+    if verbose == True:
+        iter_range = tqdm(range(max_iter))
+    else:
+        iter_range = range(max_iter)
+    for iteration in iter_range:
+        i = 0
+        while i < len(neighbourhood_types):
+            # local search
+            local_min = local_search(solution, neighbourhood_types[0], use_c)
+            # Change neighbourhood
+            if local_min.cost < solution.cost:
+                solution = local_min
+                # reset loop
+                i = 0
+            else:
+                i += 1
+        # Update optimal solution
+        if solution.cost < optimal_solution.cost:
+            optimal_solution = solution
+
+        # if we know the optimal solution and we reached it we stop
+        if problem.optimal_cost is not None \
+            and abs(optimal_solution.cost - problem.optimal_cost) < precision:
+            break
+
     return optimal_solution
