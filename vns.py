@@ -279,4 +279,9 @@ def deterministic_VNS(problem,
             and abs(optimal_solution.cost - problem.optimal_cost) < precision:
             break
 
+        # elapsed time as additional stopping criterion
+        now = time.time()
+        if now-starttime >= T_MAX:
+            break
+
     return optimal_solution

@@ -177,3 +177,5 @@ output/profile_stats
 *.o
 py_*
 *.png
+
+* copy.ipynb
