@@ -58,6 +58,10 @@ def parse_AP(filepath):
 
         return (N, p, alpha, delta, ksi, np.array(points), np.array(W))
 
+from docx import Document
+import textract
+
+
 def parse_CAB(filepath):
     with open(filepath, mode='r', encoding='utf-8-sig') as file:
         # read lines ignoring empty
@@ -68,18 +72,40 @@ def parse_CAB(filepath):
         N, p = _convert_list(parameters[:2], int)
         alpha, delta, ksi = _convert_list(parameters[2:], float)
         
+        # next N lines contain either C
+        C = []
+        for line in lines[1:N+1]:
+            C.append(list(map(float, line.split())))
+
         # next N lines contain NxN matrix containing flows between points
         W = []
-        for line in lines[1:N+1]:
-            W.append(list(map(float, line.split())))
-
-        # next N lines contain either W or C, idk :(
-        C = []
         for line in lines[N+1:]:
-            C.append(list(map(float, line.split())))
+            W.append(list(map(float, line.split())))
 
         return (N, p, alpha, delta, ksi, np.array(C), np.array(W))
 
+
+def parse_CAB_docx(filepath):
+    text = textract.process(filepath).decode('utf-8-sig')
+    # read lines ignoring empty
+    lines = [line for line in text.split('\n\n') if line.strip()]
+
+    # first line contains parameters of the problem
+    parameters = lines[0].split()
+    N, p = _convert_list(parameters[:2], int)
+    alpha, delta, ksi = _convert_list(parameters[2:], float)
+
+    # next N lines contain either C
+    C = []
+    for line in lines[1:N+1]:
+        C.append(list(map(float, line.split())))
+
+    # next N lines contain NxN matrix containing flows between points
+    W = []
+    for line in lines[N+1:]:
+        W.append(list(map(float, line.split())))
+
+    return (N, p, alpha, delta, ksi, np.array(C), np.array(W))
 
 def get_comparison_table_file_name(experimentation_topic, number_of_problems, latest_commit_id):
     return  f'./output/basic_VNS_{experimentation_topic}_{number_of_problems}_{latest_commit_id}.csv'

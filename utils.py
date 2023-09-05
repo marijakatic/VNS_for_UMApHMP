@@ -5,6 +5,7 @@ import pandas as pd
 import sys
 from os import listdir
 from os.path import isfile
+from os.path import basename
 import time
 from tqdm import tqdm
 import git
@@ -23,7 +24,7 @@ from wrapc.wrapc import floyd_warshall_c
 from wrapc.wrapc import get_solution_cost_c
 
 class ProblemInstance:
-    def __init__(self, n, p, alpha, delta, ksi, node_coordinates, demand, optimal_cost=None):
+    def __init__(self, n, p, alpha, delta, ksi, node_coordinates, demand, distances=None, name=None, optimal_cost=None):
         self.n = n
         self.p = p
         self.alpha = alpha
@@ -31,17 +32,24 @@ class ProblemInstance:
         self.ksi = ksi
         self.node_coordinates = node_coordinates
         self.demand = demand
-        self.distances = get_distance_matrix(self.node_coordinates)
+        if distances is not None:
+            self.distances = distances
+        else:
+            self.distances = get_distance_matrix(self.node_coordinates)
         self.optimal_cost = optimal_cost
+        self.name = name
 
     def __str__(self):
-        return f"{self.n}.{self.p}"
+        if self.name is None:
+            return f"{self.n}.{self.p}"
+        else:
+            return self.name
 
     def __lt__(self, obj):
         return (self.n, self.p) < (obj.n, obj.p)
 
 class Solution:
-    def __init__(self, hubs, problem, use_c=False, cost=None):
+    def __init__(self, hubs, problem, use_c=True, cost=None):
         self.hubs = hubs
         self.problem = problem
         self.use_c = use_c
@@ -175,7 +183,7 @@ def _peculiar_paths_calulations(n, problem, hubs, cost_graph, discounts):
                       problem.demand[node, node] * problem.distances[closest_hub, node] * discounts[closest_hub, node]
     return tmp_total_cost
 
-def get_solution_cost_fw(hubs, problem, use_c=False):
+def get_solution_cost_fw(hubs, problem, use_c=True):
     total_cost = 0
     nodes, discounts, cost_graph = _prepare(hubs, problem)
     # calculate cost
@@ -235,7 +243,7 @@ def get_swap3_neighbourhood(hubs, n):
 def bitmap(n, list):
     return [1 if i in list else 0 for i in range(n)]
 
-def plot_comparison_with_optimal(input_directory, solutions_file, dataset, get_solution):
+def plot_comparison_with_optimal(input_directory, solutions_file, dataset, get_solution, num_of_problems):
     '''
     Parameters:
     input_directory (str): directory with input files
@@ -244,7 +252,8 @@ def plot_comparison_with_optimal(input_directory, solutions_file, dataset, get_s
     get_solution (method): method that returns a solution (as a list of hubs)
     '''
     solutions = parse_solutions(solutions_file)
-    for n, p in solutions:
+    problems = list(solutions.keys())[:num_of_problems]
+    for n, p in problems:
         # parse the instance n, p
         filepath = input_directory + f'{n}.{p}'
         if not isfile(filepath):
@@ -253,10 +262,12 @@ def plot_comparison_with_optimal(input_directory, solutions_file, dataset, get_s
         distances = get_distance_matrix(nodes_coordinates)
 
         optimal_hubs = solutions[n,p]['hubs']
+        if optimal_hubs is None:
+            continue
         optimal_discounts = get_discount_matrix(n, optimal_hubs, alpha, delta, ksi)
         optimal_paths = allocate_paths(n, optimal_hubs, distances, optimal_discounts)
 
-        initial_hubs = get_solution(n, p, distances)
+        initial_hubs = get_solution(n, p, distances, nodes_coordinates)
         initial_discounts = get_discount_matrix(n, initial_hubs, alpha, delta, ksi)
         initial_paths = allocate_paths(n, initial_hubs, distances, initial_discounts)
         plot_two_solutions(nodes_coordinates,
@@ -268,44 +279,100 @@ def plot_comparison_with_optimal(input_directory, solutions_file, dataset, get_s
                         title2=f"Initial solution for n={n}, p={p}",
                         verbose=2)
 
-def get_comparison_table(list_of_methods, number_of_problems, dataset, test_data_directory, solutions_file):
+def get_comparison_table(list_of_methods,
+                         method_names,
+                         dataset,
+                         test_data_directory,
+                         solutions_file=None,
+                         from_problem=0,
+                         to_problems=45,
+                         initializations=[None],
+                         display_solution=False,
+                         display_deviation=True,
+                         display_time=True,
+                         display_nan=True):
     problems = []
-    solutions = parse_solutions(solutions_file)
+    solutions = {}
+    if solutions_file != None:
+        solutions = parse_solutions(solutions_file)
     files = listdir(test_data_directory)
     for file in files:
-        n, p, alpha, delta, ksi, nodes, demand = parse_input(test_data_directory + file, dataset)
+        nodes = None
+        distances = None
+        if dataset == 'AP':
+            n, p, alpha, delta, ksi, nodes, demand = parse_input(test_data_directory + file, dataset)
+        elif dataset == 'CAB':
+            n, p, alpha, delta, ksi, distances, demand = parse_input(test_data_directory + file, dataset)
         if (n,p) in solutions:
             optimal_cost = solutions[(n,p)]['objective']
         else:
             # todo fix this hack
             optimal_cost = None
-        problems.append(ProblemInstance(n, p, alpha, delta, ksi, nodes, demand, optimal_cost))
-    problems = sorted(problems)[:number_of_problems]
+        if dataset == 'AP':
+            problem_name = None
+        elif dataset == 'CAB':
+            problem_name = basename(file)
+        problems.append(ProblemInstance(n, p, alpha, delta, ksi, node_coordinates=nodes, distances=distances, demand=demand, optimal_cost=optimal_cost, name=problem_name))
+    problems = sorted(problems)[from_problem:to_problems]
 
-    columns = ['optimal solution']
-    for method in list_of_methods:
-        columns.append(method.__name__ + " - solution")
-        columns.append(method.__name__ + " - deviation (%)")
-        columns.append(method.__name__ + " - time (s)")
+    if display_solution:
+        columns = ['optimal solution']
+    else:
+        columns = []
+    for i in range(len(list_of_methods)):
+        method = list_of_methods[i]
+        method_name = method_names[i]
+        for initialization in initializations:
+            if initialization != None and method_name != "cplex":
+                if display_solution:
+                    columns.append(method_name + " " + initialization.__name__ + " - solution")
+                if display_deviation:
+                    columns.append(method_name + " " + initialization.__name__ + " - deviation (%)")
+                if display_time:
+                    columns.append(method_name + " " + initialization.__name__ + " - time (s)")
+            else:
+                if display_solution:
+                    columns.append(method_name + " - solution")
+                if display_deviation:
+                    columns.append(method_name + " - deviation (%)")
+                if display_time:
+                    columns.append(method_name + " - time (s)")
 
     data = {}
     for problem in tqdm(problems):
-        data[str(problem)] = [problem.optimal_cost]
+        if not display_nan and problem.optimal_cost == None:
+            continue
+        if display_solution:
+            data[str(problem)] = [problem.optimal_cost]
+        else:
+            data[str(problem)] = []
         for method in list_of_methods:
-            starttime = time.time()
-            solution = method(problem)
-            endtime = time.time()
-            solution.cost = solution.cost/1000
-            data[str(problem)].append(solution.cost)
-            if problem.optimal_cost == None:
-                deviation = None
-            else:
-                deviation = 100 * abs(problem.optimal_cost - solution.cost) / problem.optimal_cost
-                deviation = round(deviation, 4)
-            data[str(problem)].append(deviation)
-            data[str(problem)].append(round(endtime-starttime, 6))
+            for initialization in initializations:
+                if initialization != None and method.__name__ != "cplex":
+                    initial_solution = Solution(initialization(problem.n, problem.p, problem.distances, problem.node_coordinates), problem)
+                    starttime = time.time()
+                    solution = method(problem, initial_solution=initial_solution)
+                    endtime = time.time()
+                else:
+                    starttime = time.time()
+                    solution = method(problem)
+                    endtime = time.time()
+                solution.cost = solution.cost/1000
+                if display_solution:
+                    data[str(problem)].append(round(solution.cost, 2))
+                if problem.optimal_cost == None:
+                    deviation = None
+                else:
+                    deviation = 100 * abs(problem.optimal_cost - solution.cost) / problem.optimal_cost
+                    deviation = round(deviation, 2)
 
-    return pd.DataFrame.from_dict(data, orient='index', columns=columns)
+                if display_deviation:
+                    data[str(problem)].append(deviation)
+                if display_time:
+                    data[str(problem)].append(round(endtime-starttime, 2))
+    df = pd.DataFrame.from_dict(data, orient='index', columns=columns)
+    df.loc['mean'] = df.mean()
+    return df
 
 def get_latest_commit_id():
     repo = git.Repo(search_parent_directories=True)
