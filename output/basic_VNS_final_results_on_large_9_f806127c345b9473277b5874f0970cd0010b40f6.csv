@@ -1,0 +1,8 @@
+problem,optimal solution,RVNS shake=0.5 kmax=3 max_iter=10 grane_init - solution,RVNS shake=0.5 kmax=3 max_iter=10 grane_init - deviation (%),RVNS shake=0.5 kmax=3 max_iter=10 grane_init - time (s)
+100.15,,89037.18,,41.5
+100.20,,79409.05,,66.51
+100.25,,72164.19,,103.46
+100.30,,67200.95,,132.93
+200.15,,92857.68,,374.57
+200.20,,83385.86,,649.06
+mean,,80675.81833333333,,228.005

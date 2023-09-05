@@ -12,7 +12,7 @@ from utils import NEIGHBOURHOOD_TYPES
 
 T_MAX = 2000 # in seconds
 MAX_ITER = 20
-PRECISION = 0.01
+PRECISION = 10 # corresponds to 0.1 when solutions are devided by 1000, typically the case in papers
 
 def get_initial_solution_random(n, p, _, nodes_coor=None):
     return random.sample(range(n), p)

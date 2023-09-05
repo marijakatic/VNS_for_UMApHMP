@@ -1,0 +1,35 @@
+# -------------------------------------------------------------------------------------------------------------------------
+# BEST KNOWN - from paper Stanimirovic, "An efficient genetic algorithm for the uncapacitated multiple allocation p-hub median problem":
+# -------------------------------------------------------------------------------------------------------------------------
+
+Solution for n=50, p=15 :
+Objective : 85032.89
+Hubs :
+
+Solution for n=50, p=20 :
+Objective : 73490.33
+Hubs :
+
+Solution for n=100, p=10 :
+Objective : 104794.05
+Hubs :
+
+Solution for n=100, p=15 :
+Objective : 88882.05
+Hubs :
+
+Solution for n=100, p=20 :
+Objective : 79191.02
+Hubs :
+
+Solution for n=200, p=10 :
+Objective : 107846.82
+Hubs :
+
+Solution for n=200, p=15 :
+Objective : 92669.64
+Hubs :
+
+Solution for n=200, p=20 :
+Objective : 83385.94
+Hubs :
